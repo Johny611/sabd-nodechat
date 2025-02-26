@@ -1,0 +1,53 @@
+name: node-chat
+
+services:
+  mongo:
+    image: mongo:7.0.12
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - mern-app
+
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./server/.env
+    volumes:
+      - ./server:/app
+      - /app/node_modules  # Anonymous volume for node_modules
+    ports:
+      - 8080:8080
+    networks:
+      - node-chat
+    depends_on:
+      - mongo
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./client/.env
+    volumes:
+      - ./client:/app
+      - /app/node_modules  # Anonymous volume for node_modules
+    ports:
+      - 3000:3000  # Assuming your frontend runs on port 3000
+    networks:
+      - node-chat
+    command: npm run start
+    depends_on:
+      - api
+
+volumes:
+  mongo_data:
+
+networks:
+  mern-app:
+    driver: bridge
+  node-chat:
+    driver: bridge
